@@ -1,0 +1,13 @@
+#+title: Changelog for =xkcd-geohashing.el=
+
+* [[https://github.com/alecigne/xkcd-geohashing.el/tree/v0.1.0][v0.1.0]] - 2025-06-01
+:PROPERTIES:
+:CREATED:  [2025-06-01 Sun 14:58]
+:END:
+
+Initial version with two basics commands:
+
+- ~xkcd-gh-show-geohash~ to compute and display a geohash from a date
+  and graticule.
+
+- ~xkcd-gh-show-globalhash~ to compute a globalhash from a date.

@@ -1,0 +1,182 @@
+#+title: =xkcd-geohashing.el=
+
+[[file:.github/geohashing-emacs.png]]
+
+=xkcd-geohashing.el= is an implementation of the geohashing algorithm
+for Emacs. See the "What is geohashing?" section below for more
+details about geohashing.
+
+* The package
+:PROPERTIES:
+:CREATED:  [2025-06-01 Sun 15:40]
+:END:
+
+** Installation
+:PROPERTIES:
+:CREATED:  [2025-06-01 Sun 14:46]
+:END:
+
+In its current version =v0.1.0=, the package is not on MELPA. I will
+publish it when I feel confident enough to bump it to =v1.0.0=.
+
+For now, you can install it manually, or with the =:vc= keyword of
+=use-package=, which is available in Emacs 30.
+
+#+begin_src emacs-lisp
+  (use-package xkcd-geohashing
+    :ensure t
+    :vc (xkcd-geohashing
+         :url "https://github.com/alecigne/xkcd-geohashing.el"
+         :main-file "xkcd-geohashing.el"
+         :branch "master"
+         :rev "v0.1.0"))
+#+end_src
+
+Note: before Emacs 30, you must explicitly install =vc-use-package= to
+use the =:vc= keyword:
+
+#+begin_src emacs-lisp
+  (when (and (version< emacs-version "30")
+             (not (package-installed-p 'vc-use-package)))
+    (package-vc-install "https://github.com/slotThe/vc-use-package")
+    (require 'vc-use-package))
+#+end_src
+
+** Usage
+:PROPERTIES:
+:CREATED:  [2025-06-01 Sun 14:45]
+:END:
+
+In its current version =v0.1.0=, the package provides two commands:
+
+- =xkcd-gh-show-geohash= :: Prompts the user for a date and graticule,
+  computes the coordinates, and displays an informative message
+  (including the distance between the coordinates and the user's
+  location, if set).
+
+- =xkcd-gh-show-globalhash= :: Prompts the user for a date and does
+  the same as above.
+
+Dates must be entered in ISO format (e.g. 2025-06-01), and graticules
+in a custom [LAT,LON] format, e.g. [37,-122] or [+37,-122].
+
+You will find tests in [[file:tests/xkcd-geohashing-tests.el][xkcd-geohashing-tests.el]] that illustrate many
+use cases.
+
+You can submit new ideas in the [[https://github.com/alecigne/xkcd-geohashing.el/discussions][Discussions]] section 🙂
+
+* What is geohashing?
+:PROPERTIES:
+:CREATED:  [2025-06-01 Sun 13:26]
+:END:
+
+The term /geohashing/ was coined by [[https://en.wikipedia.org/wiki/Randall_Munroe][Randall Munroe]] in [[https://xkcd.com/426/][XKCD #426]]. Not
+to be confused with [[https://en.wikipedia.org/wiki/Geocaching][geocaching]], it is an activity whose goal is to
+reach a random location relative to a 1°×1° area of the world called a
+graticule.
+
+Since the original idea in 2008, a community has formed around
+geohashing, and there's a fairly active [[https://geohashing.site/][wiki]]. The community has
+created various rules and gamifications (achievements, meetups, etc.),
+which make geohashing even more fun.
+
+Below is an explanation of the main algorithms.
+
+** Geohash
+:PROPERTIES:
+:CREATED:  [2025-06-01 Sun 14:18]
+:END:
+
+- Take an ISO date such as 2025-06-01 and a location, such as
+  Paris. Since Paris is at 48°N and 2°E, its graticule is 48,2.
+
+- Find the [[https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average][Dow Jones Industrial Average]] opening for that date. If the
+  longitude is east of 30°W, take the opening from the previous day
+  (see why [[https://geohashing.site/geohashing/30W_Time_Zone_Rule][here]]).
+
+  Since 2°E is east of 30°W, we use the opening from 2025-05-31. If
+  there's no opening for that date (e.g. on weekends), use the most
+  recent one. Here, 2025-05-31 is a Saturday, so we use the opening
+  from Friday 2025-05-30, which was 42,192.35.
+
+- Build a string with the target date and DJIA opening:
+  =2025-06-01-42192.35=. The format matters: the decimal separator is
+  a dot, and there are always two decimals.
+
+- Compute the MD5 hash of that string in hexadecimal format. MD5
+  hashes are 128 bits long, yielding 32 hexadecimal characters.
+
+  In our example, the hash is =d59dcd9e0df46d4381e3a0062af397e7=.
+
+- Split the MD5 hash into two 16-character substrings and convert them
+  to decimals between 0 and 1.
+
+  In this example:
+
+  + =d59dcd9e0df46d43= → 0.834439135634925
+  + =81e3a0062af397e7= → 0.5073795332963996
+
+- Compute the "signed offset" for your graticule. So 48,2 becomes
+  48.83444,2.50738. For GPS coordinates, 5 decimals are more than
+  enough. Of course, [[https://xkcd.com/2170/][there's an XKCD for that too]] 😄
+
+  A signed offset means that -2 becomes -2.50737.
+
+- Go there, take pictures, meet people (optional 🙃), and record your
+  adventure on the wiki!
+
+** Globalhash
+:PROPERTIES:
+:CREATED:  [2025-06-01 Sun 14:18]
+:END:
+
+The community has also come up with another algorithm that computes a
+single unique random location on Earth per day. So for any given day,
+you can go to 64,801 random locations: the 64,800 geohashes (one per
+graticule), and the globalhash.
+
+The odds of a globalhash falling in your graticule are 1 in 64,800, or
+roughly 1 every 177 years.
+
+- Generate the "east of 30°W" decimals for a date. That means using
+  the DJIA opening from the previous day, as you would for any
+  graticule east of 30°W.
+
+  For 2025-06-01, our decimals are 0.834439135634925 and
+  0.5073795332963996.
+
+- Multiply the decimal latitude by 180 to get a value between 0 and
+  180, then subtract 90 to get a latitude between -90 and 90.
+
+  In this case: 0.834439135634925 × 180 - 90 = 60.19904
+
+- Multiply the decimal longitude by 360 to get a value between 0 and
+  360, then subtract 180 to get a longitude between -180 and 180.
+
+ In this case: 0.5073795332963996 × 360 - 180 = 2.65663
+
+- Go to [[https://maps.app.goo.gl/mizNZnrvz1eCDywU9][60.19904,2.65663]] if you can!
+
+* Development
+:PROPERTIES:
+:CREATED:  [2025-06-04 Wed 00:12]
+:END:
+
+Tests are run using an Emacs instance in batch mode, with the
+[[https://github.com/jorgenschaefer/emacs-buttercup][Buttercup]] package installed. Simply with this command:
+
+#+begin_src sh
+  emacs -batch -f package-initialize -L . -f buttercup-run-discover
+#+end_src
+
+(I probably should learn how to use [[https://emacs-eask.github.io/][Eask]].)
+
+Alternatively, there's a Justfile in the project's root directory, so
+you can simply run:
+
+#+begin_src sh
+  just test
+#+end_src
+
+...if [[https://github.com/casey/just][Just]] is installed on your system, and the command above will
+run.
