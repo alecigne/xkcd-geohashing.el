@@ -6,6 +6,9 @@
 for Emacs. See the "What is geohashing?" section below for more
 details about geohashing.
 
+Note that there is [[https://github.com/meliache/geohashing.el][another Emacs Lisp implementation]] that I discovered
+/after/ creating =v0.1.0=. It could be interesting to compare the two!
+
 * The package
 :PROPERTIES:
 :CREATED:  [2025-06-01 Sun 15:40]
